@@ -4,16 +4,16 @@
 Ce projet est une application serverless qui permet de générer et visualiser des memes en ajoutant du texte à des images. L'application utilise AWS Lambda, API Gateway, DynamoDB et S3 via Minio.
 
 ## Fonctionnalités
-Création de mèmes en ajoutant du texte sur des images
-Stockage des images dans S3 avec accès public
-Stockage des métadonnées dans DynamoDB
-Liste de tous les mèmes générés
+- Création de mèmes en ajoutant du texte sur des images
+- Stockage des images dans S3 avec accès public
+- Stockage des métadonnées dans DynamoDB
+- Liste de tous les mèmes générés
 
 ## Prérequis
 - Node.js (v18)
 - Serverless Framework (npm install -g serverless)
 - Docker (pour exécuter DynamoDB)
-- S3 (via MINIO)
+- S3 (via Minio)
 - Sharp : pour modifier une image en lui ajoutant du texte (npm i sharp)
 
 ## Installation et Configuration
@@ -22,7 +22,7 @@ Cloner le dépôt
 Installer les dépendances avec: \
 ```npm install```
 
-Configurer Minio en spécifiant un bucket (MINIO_BUCKET), une clé secrète (MINIO_SECRET_KEY) et une clé d'accès (MINIO_ACCESS_KEY)
+Configurer Minio en spécifiant un bucket (MINIO_BUCKET), une clé secrète (MINIO_SECRET_KEY) et une clé d'accès (MINIO_ACCESS_KEY) dans le fichier ```serverless.yml```
 
 Démarrer l'environnement local: \
 ```serverless offline start --reloadHandler```
