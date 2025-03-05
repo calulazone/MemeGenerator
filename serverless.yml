@@ -1,5 +1,4 @@
 # "org" ensures this Service is used with the correct Serverless Framework Access Key.
-org: sysentive
 # "app" enables Serverless Framework Dashboard features and sharing them with other Services.
 app: url-shortener
 # "service" is the name of this project. This will also be added to your AWS resource names.
@@ -12,6 +11,13 @@ provider:
   region: us-east-1
   environment:
     DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    AWS_ACCESS_KEY_ID: fakeMyKeyId
+    AWS_SECRET_ACCESS_KEY: fakeSecretAccessKey
+    MINIO_ENDPOINT: localhost
+    MINIO_PORT: 9000
+    MINIO_ACCESS_KEY: DJ890k1x5I6eoFjPTCZB
+    MINIO_SECRET_KEY: luUMwAs5v6eck4IrruAf16uaPivG3pB5fqwTwgTz
+    MINIO_BUCKET: meme-bucket
   iam:
     role:
       statements:
@@ -26,33 +32,21 @@ provider:
           Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
 
 functions:
-  hello:
-    handler: handler.index
+  generateMeme:
+    handler: handler.generateMeme
     events:
       - http:
-          path: ""
-          method: get
-
-  createUrl:
-    handler: handler.createUrl
-    events:
-      - http:
-          path: url
+          path: generate-meme
           method: post
+          cors: true
 
-  listUrls:
-    handler: handler.listUrls
+  listMemesUrl:
+    handler: handler.listMemesUrl
     events:
       - http:
-          path: url
+          path: "list-memes-url"
           method: get
 
-  getUrl:
-    handler: handler.getUrl
-    events:
-      - http:
-          path: url/{key}
-          method: get
 
 resources:
   Resources:

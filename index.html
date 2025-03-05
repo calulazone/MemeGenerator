@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Mèmes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .card {
+            background-color: white;
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], input[type="url"] {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #999;
+        }
+
+        .btn {
+            background-color: #555;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #333;
+        }
+
+        .btn:disabled {
+            background-color: #999;
+        }
+
+        .btn-secondary {
+            background-color: #777;
+        }
+
+        .preview {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .preview img {
+            max-width: 100%;
+        }
+
+        .alert {
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .alert-error {
+            background-color: #ffcccc;
+            color: #cc0000;
+        }
+
+        .alert-success {
+            background-color: #ccffcc;
+            color: #00cc00;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .gallery-item {
+            border: 1px solid #ccc;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .gallery-item .created-at {
+            background-color: #333;
+            color: white;
+            padding: 5px;
+            font-size: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid #555;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Générateur de Memes</h1>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="create">Créer un Meme</div>
+            <div class="tab" data-tab="gallery">Tous les memes</div>
+        </div>
+
+        <div id="create-tab" class="tab-content active">
+            <div class="card">
+                <h2>Créer un Nouveau Meme</h2>
+                <form id="meme-form">
+                    <div class="form-group">
+                        <label for="image-url">URL de l'image</label>
+                        <input type="url" id="image-url" name="imageUrl" placeholder="https://exemple.com/image.jpg" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="top-text">Texte du haut</label>
+                        <input type="text" id="top-text" name="topText" placeholder="Entrez le texte du haut">
+                    </div>
+                    <div class="form-group">
+                        <label for="bottom-text">Texte du bas</label>
+                        <input type="text" id="bottom-text" name="bottomText" placeholder="Entrez le texte du bas">
+                    </div>
+                    <button type="submit" id="generate-btn" class="btn">Générer le Meme</button>
+                </form>
+                <div id="alert-container"></div>
+                <div id="result" class="preview"></div>
+            </div>
+        </div>
+
+        <div id="gallery-tab" class="tab-content">
+            <div class="card">
+                <h2>Galerie de Mèmes</h2>
+                <button id="refresh-gallery" class="btn">Actualiser la Galerie</button>
+                <div id="gallery-container" class="gallery"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API endpoints
+        const GENERATE_MEME_ENDPOINT = `http://localhost:3000/dev/generate-meme`;
+        const LIST_MEMES_ENDPOINT = `http://localhost:3000/dev/list-memes-url`;
+
+        // DOM Elements
+        const memeForm = document.getElementById('meme-form');
+        const imageUrlInput = document.getElementById('image-url');
+        const topTextInput = document.getElementById('top-text');
+        const bottomTextInput = document.getElementById('bottom-text');
+        const generateBtn = document.getElementById('generate-btn');
+        const previewBtn = document.getElementById('preview-btn');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const resultContainer = document.getElementById('result');
+        const alertContainer = document.getElementById('alert-container');
+        const galleryContainer = document.getElementById('gallery-container');
+        const refreshGalleryBtn = document.getElementById('refresh-gallery');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // Tab functionality
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show active tab content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `${tabId}-tab`) {
+                        content.classList.add('active');
+                    }
+                });
+
+                // Load gallery when switching to gallery tab
+                if (tabId === 'gallery') {
+                    loadGallery();
+                }
+            });
+        });
+
+        // Generate meme form submission
+        memeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const imageUrl = imageUrlInput.value.trim();
+            const topText = topTextInput.value.trim();
+            const bottomText = bottomTextInput.value.trim();
+            
+            if (!imageUrl) {
+                showAlert('Please enter an image URL', 'error');
+                return;
+            }
+            
+            if (!topText && !bottomText) {
+                showAlert('Please enter at least one text for your meme', 'error');
+                return;
+            }
+            
+            try {
+                setLoading(true);
+                const response = await fetch(GENERATE_MEME_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        imageUrl,
+                        topText,
+                        bottomText
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to generate meme');
+                }
+                
+                showAlert('Meme generated successfully!', 'success');
+                displayGeneratedMeme(data.memeUrl);
+            } catch (error) {
+                showAlert(error.message || 'An error occurred', 'error');
+                console.error('Error generating meme:', error);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+
+        async function loadGallery() {
+            try {
+                galleryContainer.innerHTML = '<p>Loading memes...</p>';
+                
+                const response = await fetch(LIST_MEMES_ENDPOINT);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load memes');
+                }
+                
+                if (!data || data.length === 0) {
+                    galleryContainer.innerHTML = '<p>No memes found. Create your first meme!</p>';
+                    return;
+                }
+                
+                displayGallery(data);
+            } catch (error) {
+                galleryContainer.innerHTML = `<p>Error loading memes: ${error.message}</p>`;
+                console.error('Error loading gallery:', error);
+            }
+        }
+
+        function displayGallery(memes) {
+            galleryContainer.innerHTML = '';
+            
+            memes.forEach(meme => {
+                const galleryItem = document.createElement('div');
+                galleryItem.className = 'gallery-item';
+                
+                const img = document.createElement('img');
+                img.src = meme.url;
+                img.alt = 'Meme';
+                img.loading = 'lazy';
+                
+                const createdAt = document.createElement('div');
+                createdAt.className = 'created-at';
+                createdAt.textContent = formatDate(meme.createdAt);
+                
+                galleryItem.appendChild(img);
+                galleryItem.appendChild(createdAt);
+                galleryContainer.appendChild(galleryItem);
+            });
+        }
+
+        function displayGeneratedMeme(url) {
+            resultContainer.innerHTML = '';
+            
+            const heading = document.createElement('h3');
+            heading.textContent = 'Your Generated Meme';
+            
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = 'Generated meme';
+            
+            resultContainer.appendChild(heading);
+            resultContainer.appendChild(img);
+        }
+
+        function showAlert(message, type) {
+            alertContainer.innerHTML = '';
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            alertContainer.appendChild(alert);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                generateBtn.disabled = true;
+                generateBtn.innerHTML = '<span class="loading"></span> Generating...';
+            } else {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Meme';
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        // Initialize gallery on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Don't load gallery immediately to save resources
+            // It will load when user clicks on the gallery tab
+        });
+    </script>
+</body>
+</html>
